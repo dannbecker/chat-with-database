@@ -1,19 +1,24 @@
 import os
+import streamlit as st
 from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.schema import HumanMessage
 from langchain.prompts import PromptTemplate
 
+# Load environment variables
 load_dotenv()
 
+# Configure the Gemini API key from environment variables
 api_key = os.getenv("GEMINI_API_KEY")
 
+# Initialize the language model
 llm_gemini = ChatGoogleGenerativeAI(
-    model="gemini-2.0-flash",
+    model="gemini-1.5-flash",
     api_key=api_key,
     temperature=1,
 )
 
+# Define the prompt template for sentiment analysis
 template = """
 Você é um agente de inteligência artificial especializado em análise de sentimentos de clientes. Sua tarefa é analisar a avaliação abaixo e gerar três elementos:
 
@@ -47,21 +52,47 @@ Comentário da IA: O cliente demonstrou satisfação com a entrega e o atendimen
 Avaliação: {user_input}"
 """
 
-prompt = PromptTemplate(
+prompt_template = PromptTemplate(
     template=template,
     input_variables=["user_input"]
 )
 
-while True:
-    pergunta = input("Usuário: ")
+# --- Streamlit App Layout ---
 
-    if pergunta.lower() == "sair":
-        print("Encerrando o chat!")
-        break
+st.set_page_config(page_title="Análise de Sentimentos com IA", page_icon="🤖")
 
-    prompt_format = prompt.format(user_input=pergunta)
-        
-    resposta = llm_gemini.invoke([HumanMessage(content=prompt_format)])
+st.title("🤖 Análise de Sentimentos de Avaliações")
+st.markdown("---")
 
-    print(f"Assistente: {resposta.content}\n")
+st.markdown("""
+Esta aplicação utiliza Inteligência Artificial para classificar o sentimento em avaliações de clientes.
+Basta inserir o texto no campo abaixo e clicar em **Analisar**.
+""")
 
+# User input text area
+user_review = st.text_area(
+    "Insira a avaliação do cliente aqui:",
+    height=150,
+    placeholder="Ex: 'Adorei o produto, mas a entrega demorou um pouco.'"
+)
+
+# Analysis button
+if st.button("Analisar"):
+    if user_review and api_key:
+        # Format the prompt with user input
+        prompt = prompt_template.format(user_input=user_review)
+
+            # Invoke the language model
+        response = llm_gemini.invoke([HumanMessage(content=prompt)])
+
+            # Display the result
+        st.markdown("---")
+        st.subheader("Resultado da Análise:")
+        st.markdown(response.content)
+    elif not api_key:
+        st.error("A chave da API do Gemini não foi encontrada. Por favor, configure-a no arquivo .env.")
+    else:
+        st.warning("Por favor, insira uma avaliação para analisar.")
+
+st.markdown("---")
+st.markdown("Desenvolvido com [Streamlit](https.streamlit.io/) e [Google Gemini](https://ai.google/discover/gemini/).")
