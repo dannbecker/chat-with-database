@@ -92,6 +92,22 @@ prompt = PromptTemplate(
     input_variables=["pergunta", "schema"]
 )
 
+template_resposta = """
+Você é um agente cujo trabalho é receber uma pergunta que o usuário fez, receber os dados que estão associados à pergunta dele num formato de lista e formatar um texto sucinto, mas explicativo e humanizado, referente aos dados dessa lista. 
+
+Observações gerias: Seja mais direto e sem muito exagero na sua resposta.
+
+Aqui está o que ele perguntou:
+{pergunta}
+Aqui está a resposta:
+{resultado}
+"""
+
+prompt_resposta = PromptTemplate(
+    template=template_resposta,
+    input_variables=["pergunta", "resultado"]
+)
+
 while True:
 
     pergunta = input("Digite a pergunta: ")
@@ -115,7 +131,11 @@ while True:
     # print("Consulta SQL:", resposta_json['query'])
 
     resultado = executar_sql(resposta_json['query'])
-    print(resultado)
+    # print(resultado)
 
+    prompt_resposta_format = prompt_resposta.format(pergunta=pergunta, resultado=resultado)
+    resposta_final = llm_gemini.invoke([HumanMessage(content=prompt_resposta_format)])
+
+    print(resposta_final.content)
     #resultado_sql = executar_sql(resposta)
     #print(resultado_sql)
